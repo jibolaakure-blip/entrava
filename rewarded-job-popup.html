@@ -132,7 +132,7 @@ window.googletag = window.googletag || { cmd: [] };
 (function () {
   var CFG = {
     adUnitPath: '/23346365143/rew',
-    contentSelector: '.post-body, .entry-content',
+    contentSelector: '',      // '' = show on every page. To limit it to articles, use e.g. '.post-body, .entry-content'
     question: 'Which type of job are you looking for?',
     options: ['Full-time', 'Part-time', 'Remote'],
     searchMs: 2400,           // how long the "searching" step shows
@@ -146,9 +146,11 @@ window.googletag = window.googletag || { cmd: [] };
   var KEY = 'rw_unlocked_until';
 
   function init() {
-    if (!document.querySelector(CFG.contentSelector)) return;
-    if (!CFG.alwaysShow) { try { if (sessionStorage.getItem('rw_dismissed')) return; } catch (e) {} }
-    try { if (+localStorage.getItem(KEY) > Date.now()) return; } catch (e) {}
+    var say = function (why) { try { console.log('[rw] popup not shown: ' + why); } catch (e) {} };
+    if (CFG.contentSelector && !document.querySelector(CFG.contentSelector)) return say('no element matches contentSelector "' + CFG.contentSelector + '" on this page');
+    if (!document.getElementById('rw-wrap')) return say('popup markup (#rw-wrap) is missing, paste the whole block');
+    if (!CFG.alwaysShow) { try { if (sessionStorage.getItem('rw_dismissed')) return say('closed earlier this visit'); } catch (e) {} }
+    try { if (+localStorage.getItem(KEY) > Date.now()) return say('reader chose the 24-hour unlock; clear localStorage key rw_unlocked_until to test'); } catch (e) {}
 
     var $ = function (id) { return document.getElementById(id); };
     var wrap = $('rw-wrap'), opts = $('rw-opts'), msg = $('rw-msg');
