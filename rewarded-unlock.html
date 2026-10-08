@@ -1,0 +1,177 @@
+<!-- Rewarded unlock: paste into a Blogger/WordPress HTML widget or footer. -->
+<style>
+  :root{
+    --rw-bg:#fff; --rw-fg:#0f172a; --rw-muted:#475569; --rw-line:#e2e8f0;
+    --rw-accent:#2563eb; --rw-accent2:#7c3aed; --rw-ok-bg:#ecfdf5; --rw-ok:#047857; --rw-warn:#b45309;
+    --rw-fade:#fff;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --rw-bg:#111827; --rw-fg:#f1f5f9; --rw-muted:#94a3b8; --rw-line:#1f2937;
+      --rw-ok-bg:#064e3b; --rw-ok:#6ee7b7; --rw-warn:#fbbf24; --rw-fade:#0b1220; }
+  }
+  .rw-locked{max-height:420px;overflow:hidden;position:relative}
+  .rw-locked::after{content:"";position:absolute;inset:auto 0 0 0;height:160px;pointer-events:none;
+    background:linear-gradient(to bottom,transparent,var(--rw-fade) 85%)}
+
+  #rw-overlay{position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,.6);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;visibility:hidden;
+    transition:opacity .25s,visibility .25s}
+  #rw-sheet{position:fixed;z-index:99999;left:50%;bottom:0;width:100%;max-width:440px;box-sizing:border-box;
+    transform:translate(-50%,100%);visibility:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility .35s;
+    background:var(--rw-bg);color:var(--rw-fg);border-radius:24px 24px 0 0;padding:12px 22px calc(22px + env(safe-area-inset-bottom));
+    box-shadow:0 -12px 50px rgba(0,0,0,.3);text-align:center;
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  #rw-sheet::before{content:"";display:block;width:40px;height:4px;border-radius:4px;background:var(--rw-line);margin:0 auto 18px}
+  .rw-open #rw-overlay{opacity:1;visibility:visible}
+  .rw-open #rw-sheet{transform:translate(-50%,0);visibility:visible}
+  @media (min-width:600px){
+    #rw-sheet{bottom:auto;top:50%;border-radius:24px;padding-bottom:22px;transform:translate(-50%,-40%) scale(.95);opacity:0}
+    .rw-open #rw-sheet{transform:translate(-50%,-50%) scale(1);opacity:1}
+  }
+  #rw-sheet .rw-icon{width:56px;height:56px;margin:0 auto 10px;border-radius:18px;display:grid;place-items:center;
+    font-size:28px;background:linear-gradient(135deg,var(--rw-accent),var(--rw-accent2))}
+  #rw-sheet h3{margin:0 0 6px;font-size:21px;line-height:1.25;color:var(--rw-fg)}
+  #rw-sheet p{margin:0 0 14px;color:var(--rw-muted)}
+  .rw-reward{display:inline-block;margin-bottom:16px;padding:5px 12px;border-radius:999px;
+    background:var(--rw-ok-bg);color:var(--rw-ok);font-size:13px;font-weight:600}
+  #rw-watch{display:block;width:100%;border:0;border-radius:14px;padding:15px;font:inherit;font-weight:700;font-size:16px;
+    color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--rw-accent),var(--rw-accent2));
+    transition:transform .15s,opacity .2s}
+  #rw-watch:active:not([disabled]){transform:scale(.98)}
+  #rw-watch[disabled]{opacity:.55;cursor:wait}
+  #rw-later{margin-top:8px;padding:10px 14px;background:none;border:0;color:var(--rw-muted);font:inherit;font-size:14px;cursor:pointer}
+  #rw-msg{min-height:18px;margin-top:8px;font-size:13px;color:var(--rw-warn)}
+  #rw-sheet button:focus-visible{outline:3px solid var(--rw-accent);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){#rw-sheet,#rw-overlay,#rw-watch{transition:none}}
+</style>
+
+<div id="rw-overlay"></div>
+<div id="rw-sheet" role="dialog" aria-modal="true" aria-labelledby="rw-title" aria-describedby="rw-desc">
+  <div class="rw-icon" aria-hidden="true">🎁</div>
+  <h3 id="rw-title">Keep reading for free</h3>
+  <p id="rw-desc">Watch one short ad to unlock the rest of this article. Ads keep this site free.</p>
+  <!-- Reward disclosure (required by Google policy): say exactly what the user gets -->
+  <div class="rw-reward" id="rw-reward">Reward: full article access for 24 hours</div>
+  <button id="rw-watch" disabled>Loading ad…</button>
+  <div id="rw-msg" role="status" aria-live="polite"></div>
+  <button id="rw-later">Maybe later</button>
+</div>
+
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<script>
+window.googletag = window.googletag || { cmd: [] };
+(function () {
+  /* ---------- SETTINGS ---------- */
+  var CFG = {
+    adUnitPath: '/23346365143/rew',                // from Ad Manager
+    contentSelector: '.post-body, .entry-content', // Blogger, WordPress
+    unlockHours: 24,
+    showAfterMs: 4000,     // delay before the offer appears
+    adTimeoutMs: 12000,    // give up waiting for an ad after this long
+    unlockIfNoAd: false    // true = unlock for free when no ad fills
+  };
+  var KEY = 'rw_unlocked_until', DISMISS = 'rw_dismissed';
+
+  var content = document.querySelector(CFG.contentSelector);
+  if (!content) return;                                                          // not a post page
+  try { if (sessionStorage.getItem(DISMISS)) return; } catch (e) {}              // said "maybe later" this visit
+  try { if (+localStorage.getItem(KEY) > Date.now()) return; } catch (e) {}      // still unlocked
+
+  var root = document.documentElement,
+      sheet = document.getElementById('rw-sheet'),
+      btn = document.getElementById('rw-watch'),
+      msg = document.getElementById('rw-msg'),
+      later = document.getElementById('rw-later'),
+      overlay = document.getElementById('rw-overlay'),
+      reward = document.getElementById('rw-reward');
+  var slot = null, readyEvt = null, granted = false, timer = 0, lastFocus = null;
+
+  reward.textContent = 'Reward: full article access for ' +
+    (CFG.unlockHours === 24 ? '24 hours' : CFG.unlockHours + ' hours');
+  content.classList.add('rw-locked');
+
+  /* ---------- sheet ---------- */
+  function openSheet() {
+    lastFocus = document.activeElement;
+    root.classList.add('rw-open');
+    setTimeout(function () { (btn.disabled ? later : btn).focus(); }, 50);
+  }
+  function closeSheet() {
+    root.classList.remove('rw-open');
+    if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
+  }
+  function unlock() {
+    content.classList.remove('rw-locked');
+    try { localStorage.setItem(KEY, Date.now() + CFG.unlockHours * 3600e3); } catch (e) {}
+    closeSheet();
+  }
+  function dismiss() {                 // "Maybe later": reveal everything, no strings attached
+    content.classList.remove('rw-locked');
+    try { sessionStorage.setItem(DISMISS, '1'); } catch (e) {}
+    closeSheet();
+  }
+  function failed(text) {
+    clearTimeout(timer);
+    if (CFG.unlockIfNoAd) return unlock();
+    btn.textContent = 'Try again'; btn.disabled = false; btn.dataset.retry = '1';
+    msg.textContent = text || 'No ad is available right now. Please try again shortly.';
+  }
+
+  /* ---------- ad ---------- */
+  function loadAd() {
+    readyEvt = null; granted = false;
+    btn.disabled = true; btn.textContent = 'Loading ad…'; msg.textContent = '';
+    clearTimeout(timer);
+    timer = setTimeout(function () { failed('The ad took too long to load.'); }, CFG.adTimeoutMs);
+    googletag.cmd.push(function () {
+      if (slot) { googletag.destroySlots([slot]); slot = null; }
+      slot = googletag.defineOutOfPageSlot(CFG.adUnitPath, googletag.enums.OutOfPageFormat.REWARDED);
+      if (!slot) return failed('Rewarded ads are not supported on this device or page.');
+      slot.addService(googletag.pubads());
+      googletag.enableServices();
+      googletag.display(slot);
+    });
+  }
+
+  googletag.cmd.push(function () {
+    var ps = googletag.pubads();
+    ps.addEventListener('rewardedSlotReady', function (e) {
+      if (e.slot !== slot) return;
+      clearTimeout(timer);
+      readyEvt = e; btn.disabled = false; btn.textContent = 'Watch ad & unlock';
+    });
+    ps.addEventListener('rewardedSlotGranted', function (e) { if (e.slot === slot) granted = true; });
+    ps.addEventListener('rewardedSlotClosed', function (e) {
+      if (e.slot !== slot) return;
+      if (granted) { unlock(); return; }
+      loadAd(); openSheet();           // closed early: reward not earned, offer again
+    });
+    ps.addEventListener('slotRenderEnded', function (e) {
+      if (slot && e.slot === slot && e.isEmpty) failed();
+    });
+  });
+
+  /* The user must tap: one opt-in per ad, never auto-play (policy) */
+  btn.addEventListener('click', function () {
+    if (btn.dataset.retry) { btn.dataset.retry = ''; loadAd(); return; }
+    if (readyEvt) { closeSheet(); readyEvt.makeRewardedVisible(); }
+  });
+  later.addEventListener('click', dismiss);
+  overlay.addEventListener('click', dismiss);
+
+  /* Escape closes; Tab stays inside the dialog */
+  document.addEventListener('keydown', function (e) {
+    if (!root.classList.contains('rw-open')) return;
+    if (e.key === 'Escape') return dismiss();
+    if (e.key !== 'Tab') return;
+    var f = [btn, later].filter(function (b) { return !b.disabled; });
+    if (!f.length) return e.preventDefault();
+    var first = f[0], last = f[f.length - 1];
+    if (!sheet.contains(document.activeElement)) { first.focus(); e.preventDefault(); }
+    else if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+    else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+  });
+
+  setTimeout(function () { loadAd(); openSheet(); }, CFG.showAfterMs);
+})();
+</script>
