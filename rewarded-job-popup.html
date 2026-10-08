@@ -1,0 +1,291 @@
+<!-- Rewarded job-type popup. Paste once, just before </body> (or in an HTML/JavaScript gadget). -->
+<style>
+  #rw-wrap{--rw-accent:#0d5c4d;--rw-tint:#e6f2ee;display:none}
+  #rw-wrap.rw-show{display:block}
+  #rw-wrap,#rw-wrap *{box-sizing:border-box}
+  html.rw-noscroll{overflow:hidden}
+
+  #rw-overlay{position:fixed;top:0;right:0;bottom:0;left:0;z-index:99998;background:rgba(247,249,248,.95);
+    opacity:0;transition:opacity .28s ease}
+  @supports ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+    #rw-overlay{background:rgba(247,249,248,.62);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px)}
+  }
+
+  #rw-box{position:fixed;top:50%;left:50%;z-index:99999;width:calc(100% - 32px);max-width:420px;
+    opacity:0;transform:translate(-50%,-47%) scale(.97);transition:transform .28s ease,opacity .28s ease;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  #rw-wrap.rw-in #rw-overlay{opacity:1}
+  #rw-wrap.rw-in #rw-box{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+  #rw-card{background:#fff;border:1px solid #dde5e2;border-radius:18px;padding:30px 22px 20px;text-align:center;
+    box-shadow:0 18px 48px rgba(16,40,34,.13);max-height:calc(100vh - 96px);overflow:auto}
+
+  #rw-close{position:absolute;top:-40px;right:0;width:36px;height:36px;margin:0;padding:0;border:0;border-radius:50%;
+    background:rgba(255,255,255,.85);color:#5b6b66;font:400 22px/36px system-ui,sans-serif;cursor:pointer;
+    -webkit-appearance:none;appearance:none;box-shadow:0 1px 4px rgba(16,40,34,.12)}
+
+  #rw-card .rw-badge{width:52px;height:52px;margin:0 auto 12px;border-radius:50%;background:var(--rw-tint);
+    color:var(--rw-accent);display:flex;align-items:center;justify-content:center}
+  #rw-card .rw-kicker{margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#6b7c77}
+  #rw-card #rw-q{margin:0 0 22px;padding:0;font-size:23px;line-height:1.3;font-weight:500;color:#2c3835;
+    text-transform:none;letter-spacing:normal}
+
+  #rw-opts{display:grid;gap:12px}
+  #rw-opts .rw-opt{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;margin:0;
+    padding:12px 16px;border:0;border-radius:11px;background:var(--rw-accent);color:#fff;cursor:pointer;
+    font:600 17px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;text-transform:none;
+    letter-spacing:normal;box-shadow:none;-webkit-appearance:none;appearance:none;
+    transition:filter .15s ease,transform .1s ease,opacity .2s ease}
+  #rw-opts .rw-opt:hover{filter:brightness(1.1)}
+  #rw-opts .rw-opt:active{transform:scale(.985)}
+  #rw-opts .rw-opt:focus-visible,#rw-close:focus-visible{outline:3px solid rgba(13,92,77,.35);outline-offset:2px}
+  #rw-opts .rw-dim{opacity:.4;pointer-events:none}
+  #rw-opts .rw-busy{pointer-events:none}
+  #rw-opts .rw-busy::after{content:"";width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.45);
+    border-top-color:#fff;animation:rw-spin .7s linear infinite}
+  @keyframes rw-spin{to{transform:rotate(360deg)}}
+
+  #rw-card #rw-note{margin:16px 0 0;font-size:12.5px;line-height:1.5;color:#6b7c77}
+  #rw-card #rw-note b{display:inline-block;margin-right:6px;padding:0 5px;border:1px solid #c5d1cd;border-radius:4px;
+    font-size:10.5px;font-weight:700;line-height:1.5;color:#55655f;vertical-align:1px}
+  #rw-card #rw-msg{margin:10px 0 0;font-size:13px;line-height:1.45;color:#b45309}
+  #rw-card #rw-msg:empty{display:none}
+
+  #rw-wrap [hidden]{display:none!important}
+  #rw-card .rw-step{animation:rw-fade .3s ease both}
+  @keyframes rw-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  #rw-card .rw-spin{width:52px;height:52px;margin:0 auto 16px;border-radius:50%;border:4px solid var(--rw-tint);
+    border-top-color:var(--rw-accent);animation:rw-spin .8s linear infinite}
+  #rw-card .rw-bar{height:6px;margin:18px auto 4px;max-width:240px;border-radius:6px;background:var(--rw-tint);overflow:hidden}
+  #rw-card .rw-bar i{display:block;height:100%;width:0;background:var(--rw-accent);border-radius:6px}
+  #rw-card .rw-sub{margin:0 0 20px;font-size:15px;line-height:1.5;color:#55655f}
+  #rw-card #rw-found{margin:0 0 8px;padding:0;font-size:23px;line-height:1.3;font-weight:500;color:#2c3835;text-transform:none;letter-spacing:normal}
+  #rw-view{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;margin:0;padding:12px 16px;
+    border:0;border-radius:11px;background:var(--rw-accent);color:#fff;cursor:pointer;
+    font:600 17px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-appearance:none;appearance:none;
+    transition:filter .15s ease,transform .1s ease}
+  #rw-view:hover{filter:brightness(1.1)}#rw-view:active{transform:scale(.985)}
+  #rw-view:focus-visible{outline:3px solid rgba(13,92,77,.35);outline-offset:2px}
+  #rw-more{margin:18px 0 0;padding-top:16px;border-top:1px solid #e3eae7}
+  #rw-more p{margin:0 0 10px;font-size:13px;line-height:1.45;color:#6b7c77}
+  #rw-24{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin:0;padding:10px 14px;
+    border:1.5px solid var(--rw-accent);border-radius:10px;background:transparent;color:var(--rw-accent);cursor:pointer;
+    font:600 15px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-appearance:none;appearance:none;
+    transition:background .15s ease,transform .1s ease}
+  #rw-24:hover{background:var(--rw-tint)}#rw-24:active{transform:scale(.985)}
+  #rw-24:focus-visible{outline:3px solid rgba(13,92,77,.35);outline-offset:2px}
+  #rw-24.rw-busy{pointer-events:none;opacity:.7}
+  #rw-view.rw-busy{pointer-events:none;opacity:.85}
+  #rw-view.rw-busy::after{content:"";width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.45);
+    border-top-color:#fff;animation:rw-spin .7s linear infinite}
+  @media (prefers-reduced-motion:reduce){
+    #rw-card .rw-step,#rw-card .rw-spin,#rw-view{animation:none;transition:none}
+    #rw-overlay,#rw-box,#rw-opts .rw-opt{transition:none}
+  }
+</style>
+
+<div id="rw-wrap">
+  <div id="rw-overlay"></div>
+  <div id="rw-box" role="dialog" aria-modal="true" aria-labelledby="rw-q">
+    <button id="rw-close" type="button" aria-label="Close">&times;</button>
+    <div id="rw-card">
+      <!-- step 1: choose -->
+      <div id="rw-s1" class="rw-step">
+        <div class="rw-badge" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18M12 11.5v2"/></svg>
+        </div>
+        <p class="rw-kicker">Quick question</p>
+        <h3 id="rw-q"></h3>
+        <div id="rw-opts"></div>
+      </div>
+      <!-- step 2: searching -->
+      <div id="rw-s2" class="rw-step" hidden>
+        <div class="rw-spin" aria-hidden="true"></div>
+        <p class="rw-kicker">Please wait</p>
+        <h3 id="rw-search" style="margin:0;font-size:22px;font-weight:500;color:#2c3835"></h3>
+        <div class="rw-bar" aria-hidden="true"><i id="rw-barfill"></i></div>
+      </div>
+      <!-- step 3: found -->
+      <div id="rw-s3" class="rw-step" hidden>
+        <div class="rw-badge" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </div>
+        <p class="rw-kicker">Good news</p>
+        <h3 id="rw-found">We found available jobs for you!</h3>
+        <p class="rw-sub" id="rw-found-sub"></p>
+        <button id="rw-view" type="button">View available jobs</button>
+        <!-- Tells the reader the tap opens an ad and what they get for it. Keep this line. -->
+        <p id="rw-note"><b>Ad</b><span id="rw-note-text"></span></p>
+        <div id="rw-more">
+          <p>Don't want to see this every time?</p>
+          <button id="rw-24" type="button"></button>
+        </div>
+      </div>
+      <p id="rw-msg" role="status"></p>
+    </div>
+  </div>
+</div>
+
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<script>
+window.googletag = window.googletag || { cmd: [] };
+(function () {
+  var CFG = {
+    adUnitPath: '/23346365143/rew',
+    contentSelector: '.post-body, .entry-content',
+    question: 'Which type of job are you looking for?',
+    options: ['Full-time', 'Part-time', 'Remote'],
+    searchMs: 2400,           // how long the "searching" step shows
+    jobsUrl: '',              // optional: send readers here after the ad, e.g. '/p/jobs.html'
+    unlockHours: 24,
+    showAfterMs: 1500,
+    adWaitMs: 8000,
+    alwaysShow: true,         // show the popup on every visit, for every reader
+    unlockIfNoAd: false
+  };
+  var KEY = 'rw_unlocked_until';
+
+  function init() {
+    if (!document.querySelector(CFG.contentSelector)) return;
+    if (!CFG.alwaysShow) { try { if (sessionStorage.getItem('rw_dismissed')) return; } catch (e) {} }
+    try { if (+localStorage.getItem(KEY) > Date.now()) return; } catch (e) {}
+
+    var $ = function (id) { return document.getElementById(id); };
+    var wrap = $('rw-wrap'), opts = $('rw-opts'), msg = $('rw-msg');
+    var slot = null, readyEvt = null, granted = false;
+    var pending = false, needReload = false, waitTimer = 0;
+
+    $('rw-q').textContent = CFG.question;
+    $('rw-note-text').textContent = 'Tapping the button plays one short ad. Watch it to open the full list.';
+    $('rw-24').textContent = 'Watch one ad, unlock for ' + CFG.unlockHours + ' hours';
+    var want24 = false;
+    var chosen = '', stepTimer = 0, barTimer = 0;
+    function step(n) {
+      ['rw-s1', 'rw-s2', 'rw-s3'].forEach(function (id, i) { $(id).hidden = (i + 1 !== n); });
+    }
+    CFG.options.forEach(function (label) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'rw-opt'; b.textContent = label;
+      b.addEventListener('click', function () { choose(label); });
+      opts.appendChild(b);
+    });
+
+    function openCard() {
+      wrap.classList.add('rw-show');
+      document.documentElement.classList.add('rw-noscroll');
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { wrap.classList.add('rw-in'); });
+      });
+    }
+    function closeCard() {
+      wrap.classList.remove('rw-in');
+      document.documentElement.classList.remove('rw-noscroll');
+      setTimeout(function () { if (!wrap.classList.contains('rw-in')) wrap.classList.remove('rw-show'); }, 300);
+    }
+    function resetButtons() {
+      $('rw-view').classList.remove('rw-busy'); $('rw-24').classList.remove('rw-busy');
+    }
+    function unlock() {
+      if (want24) { try { localStorage.setItem(KEY, Date.now() + CFG.unlockHours * 3600e3); } catch (e) {} }
+      closeCard();
+      if (CFG.jobsUrl) location.href = CFG.jobsUrl;
+    }
+    function noAd(text) {
+      clearTimeout(waitTimer); pending = false; resetButtons();
+      if (CFG.unlockIfNoAd) return unlock();
+      needReload = true;
+      msg.textContent = text || 'No ad is available right now. Tap the button to try again, or close this to keep reading.';
+    }
+
+    function loadAd() {
+      readyEvt = null; granted = false;
+      if (slot) { googletag.destroySlots([slot]); slot = null; }
+      slot = googletag.defineOutOfPageSlot(CFG.adUnitPath, googletag.enums.OutOfPageFormat.REWARDED);
+      if (!slot) {
+        needReload = true;
+        if (pending) noAd('Rewarded ads are not supported on this device. Close this to keep reading.');
+        return;
+      }
+      slot.addService(googletag.pubads());
+      googletag.enableServices();
+      googletag.display(slot);
+    }
+    function showAd() {
+      var e = readyEvt;
+      clearTimeout(waitTimer); pending = false; readyEvt = null;
+      closeCard();
+      e.makeRewardedVisible();
+    }
+
+    googletag.cmd.push(function () {
+      var ps = googletag.pubads();
+      ps.addEventListener('rewardedSlotReady', function (e) {
+        readyEvt = e;
+        if (pending) showAd();
+      });
+      ps.addEventListener('rewardedSlotGranted', function () { granted = true; });
+      ps.addEventListener('rewardedSlotClosed', function () {
+        if (granted) {
+          if (slot) { googletag.destroySlots([slot]); slot = null; }
+          return unlock();
+        }
+        resetButtons();
+        msg.textContent = 'The ad was closed before it finished. Tap the button to try again.';
+        step(3); loadAd(); openCard();
+      });
+      ps.addEventListener('slotRenderEnded', function (e) {
+        if (slot && e.slot === slot && e.isEmpty) {
+          needReload = true;
+          if (pending) noAd();
+        }
+      });
+    });
+
+    /* step 1 -> 2 -> 3: choosing only starts the search, no ad yet */
+    function choose(label) {
+      chosen = label; msg.textContent = '';
+      try { localStorage.setItem('rw_job_type', label); } catch (e) {}
+      if (window.dataLayer) window.dataLayer.push({ event: 'rw_job_choice', job_type: label });
+      $('rw-search').textContent = 'Searching for ' + label.toLowerCase() + ' jobs\u2026';
+      $('rw-found-sub').textContent = 'There are ' + label.toLowerCase() + ' openings waiting for you.';
+      var fill = $('rw-barfill'); fill.style.transition = 'none'; fill.style.width = '0';
+      step(2);
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        fill.style.transition = 'width ' + CFG.searchMs + 'ms ease'; fill.style.width = '100%';
+      }); });
+      clearTimeout(stepTimer);
+      stepTimer = setTimeout(function () { step(3); $('rw-view').focus(); }, CFG.searchMs);
+    }
+
+    /* the reader's tap on "View available jobs" is the opt-in: one tap, one ad */
+    function view(long, btn) {
+      if (pending) return;
+      pending = true; msg.textContent = ''; want24 = !!long;
+      btn.classList.add('rw-busy');
+      if (needReload) { needReload = false; googletag.cmd.push(loadAd); }
+      if (!pending) return;
+      if (readyEvt) return showAd();
+      waitTimer = setTimeout(function () { if (pending) noAd(); }, CFG.adWaitMs);
+    }
+    $('rw-view').addEventListener('click', function () { view(false, this); });
+    $('rw-24').addEventListener('click', function () { view(true, this); });
+
+    function dismiss() {
+      clearTimeout(waitTimer); clearTimeout(stepTimer); pending = false;
+      if (!CFG.alwaysShow) { try { sessionStorage.setItem('rw_dismissed', '1'); } catch (e) {} }
+      closeCard();
+    }
+    $('rw-close').addEventListener('click', dismiss);
+    $('rw-overlay').addEventListener('click', dismiss);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && wrap.classList.contains('rw-in')) dismiss();
+    });
+
+    googletag.cmd.push(loadAd);
+    setTimeout(openCard, CFG.showAfterMs);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
